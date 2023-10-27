@@ -51,3 +51,62 @@ def parse_json(data):
 ######################################################################
 # INSERT CODE HERE
 ######################################################################
+@app.route("/health", methods=["GET"])
+def health():
+    data = {
+        "status": "OK"
+    }
+    return jsonify(data)
+
+@app.route("/count", methods=["GET"])
+def count():
+    data = {
+        "count": 20
+    }
+    return jsonify(data)
+
+@app.route("/song", methods=["GET"])
+def songs():
+    all_songs = list(db.songs.find({}))
+    song_list = [json.loads(json_util.dumps(song)) for song in all_songs]
+    data = {"song": song_list}
+    return jsonify(data)
+
+@app.route("/song/<int:id>", methods=["GET"])
+def get_song_by_id(id):
+    one_song = db.songs.find_one({"id": id})
+    if one_song is None:
+        return jsonify({"message": "Song with id not found"}), 404
+    return json.loads(json_util.dumps(one_song)), 200
+
+
+@app.route("/song", methods=["POST"])
+def create_song():
+    song_data = request.json
+    song = db.songs.find_one({"id": song_data["id"]})
+    
+    if song:
+        return {"Message": f"Song with id {id} already present"}, 302
+    insert_id: InsertOneResult = db.songs.insert_one(song_data)
+    return {"inserted id": parse_json(insert_id.inserted_id)}, 201
+
+@app.route("/song/<int:id>", methods=["PUT"])
+def update_song(id):
+    song_data = request.json
+    song = db.songs.find_one({"id": id})
+    if song == None:
+        return {"Message": f"song not found"}, 404
+    result = db.songs.update_one({"id": id}, {"$set": song_data})
+    if result.modified_count == 0:
+        return {"message": "song found, but nothing updated"}, 200
+    else:
+        return parse_json(db.songs.find_one({"id": id})), 200
+
+
+@app.route("/song/<int:id>", methods=["DELETE"])
+def delete_song(id):
+    result = db.songs.delete_one({"id": id})
+    if result.deleted_count == 0:
+        return jsonify({"message": "Song not found"}), 404
+    elif result.deleted_count == 1:
+        return '', 204
